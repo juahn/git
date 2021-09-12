@@ -28,7 +28,8 @@ static int send_request(const char *socket, const struct strbuf *out)
 		int r;
 
 		r = read_in_full(fd, in, sizeof(in));
-		if (r == 0 || (r < 0 && errno == ECONNRESET))
+		if (r == 0 ||
+			(r < 0 && (errno == ECONNRESET || errno == EINVAL)))
 			break;
 		if (r < 0)
 			die_errno("read error from cache daemon");
@@ -75,7 +76,7 @@ static void do_cache(const char *socket, const char *action, int timeout,
 	}
 
 	if (send_request(socket, &buf) < 0) {
-		if (errno != ENOENT && errno != ECONNREFUSED)
+		if (errno != ENOENT && errno != ECONNREFUSED && errno != ENETDOWN)
 			die_errno("unable to connect to cache daemon");
 		if (flags & FLAG_SPAWN) {
 			spawn_daemon(socket);
